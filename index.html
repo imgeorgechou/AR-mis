@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, user-scalable=no"
+    />
+    <title>AR 追蹤</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.1/dist/mindar-image.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.1/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r17/Stats.min.js"></script>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; worker-src * blob:;"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <style>
+      body {
+        margin: 0;
+      }
+      .example-container {
+        overflow: hidden;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+      #error-message {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        z-index: 9999;
+        text-align: center;
+        max-width: 80%;
+      }
+      .show-error {
+        display: block !important;
+      }
+
+      /* 添加 footer 樣式 */
+      .footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        text-align: center;
+        padding: 15px 0;
+        font-size: 16px;
+        z-index: 1000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="example-container">
+      <a-scene
+        mindar-image="imageTargetSrc: ./targets.mind;"
+        embedded
+        color-space="sRGB"
+        renderer="colorManagement: true, physicallyCorrectLights"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false"
+      >
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- 第一個辨識目標 -->
+        <a-entity mindar-image-target="targetIndex: 0">
+          <a-plane
+            src="./ans1.png"
+            position="0 0 0"
+            height="1"
+            width="1"
+            rotation="0 0 0"
+            transparent="true"
+            alphaTest="0.5"
+            material="opacity: 1; transparent: true"
+          ></a-plane>
+        </a-entity>
+
+        <!-- 第二個辨識目標 -->
+        <a-entity mindar-image-target="targetIndex: 1">
+          <a-plane
+            src="./2.png"
+            position="2 2 0"
+            height="1"
+            width="1.5"
+            rotation="0 0 0"
+            transparent="true"
+            alphaTest="0.5"
+            material="opacity: 1; transparent: true"
+          ></a-plane>
+        </a-entity>
+
+        <!-- 第三個辨識目標 -->
+        <a-entity mindar-image-target="targetIndex: 2">
+          <a-plane
+            src="./3.png"
+            position="2 2 0"
+            height="1"
+            width="1.5"
+            rotation="0 0 0"
+            transparent="true"
+            alphaTest="0.5"
+            material="opacity: 1; transparent: true"
+          ></a-plane>
+        </a-entity>
+
+        <!-- 第四個辨識目標 -->
+        <a-entity mindar-image-target="targetIndex: 3">
+          <a-plane
+            src="./4.png"
+            position="2 2 0"
+            height="1"
+            width="1.5"
+            rotation="0 0 0"
+            transparent="true"
+            alphaTest="0.5"
+            material="opacity: 1; transparent: true"
+          ></a-plane>
+        </a-entity>
+
+        <!-- 第五個辨識目標 -->
+        <a-entity mindar-image-target="targetIndex: 4">
+          <a-plane
+            src="./ans5.png"
+            position="2 2 0"
+            height="1"
+            width="1.5"
+            rotation="0 0 0"
+            transparent="true"
+            alphaTest="0.5"
+            material="opacity: 1; transparent: true"
+          ></a-plane>
+        </a-entity>
+
+        <!-- 第六個辨識目標 -->
+        <a-entity mindar-image-target="targetIndex: 5">
+          <a-plane
+            src="./6.png"
+            position="2 2 0"
+            height="1"
+            width="1.5"
+            rotation="0 0 0"
+            transparent="true"
+            alphaTest="0.5"
+            material="opacity: 1; transparent: true"
+          ></a-plane>
+        </a-entity>
+
+        <!-- 第七個辨識目標 -->
+        <a-entity mindar-image-target="targetIndex: 6">
+          <a-plane
+            src="./7.png"
+            position="2 2 0"
+            height="1"
+            width="1.5"
+            rotation="0 0 0"
+            transparent="true"
+            alphaTest="0.5"
+            material="opacity: 1; transparent: true"
+          ></a-plane>
+        </a-entity>
+      </a-scene>
+
+      <!-- 添加 footer -->
+      <div class="footer">掃描完畢後，請點擊上一頁回到遊戲</div>
+    </div>
+
+    <script>
+      // 添加性能監控
+      const stats = new Stats();
+      stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+      document.body.appendChild(stats.dom);
+
+      window.addEventListener("load", async () => {
+        // 顯示初始提示
+        const initialMessage = document.getElementById("initial-message");
+        initialMessage.style.display = "block";
+
+        // 5秒後自動隱藏提示
+        setTimeout(() => {
+          initialMessage.style.display = "none";
+        }, 5000);
+
+        try {
+          const sceneEl = document.querySelector("a-scene");
+
+          // 等待場景載入
+          await new Promise((resolve) => {
+            if (sceneEl.hasLoaded) {
+              resolve();
+            } else {
+              sceneEl.addEventListener("loaded", resolve, { once: true });
+            }
+          });
+
+          // 檢查相機權限
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: "environment",
+              },
+            });
+
+            // 釋放相機
+            stream.getTracks().forEach((track) => track.stop());
+
+            // 獲取 AR 系統
+            const arSystem = sceneEl.systems["mindar-image-system"];
+            if (!arSystem) {
+              throw new Error("AR 系統未能初始化");
+            }
+
+            // 修改事件監聽，添加更多調試信息
+            sceneEl.addEventListener("targetFound", (event) => {
+              const targetIndex = event.detail.targetIndex;
+              console.log("目標找到:", targetIndex);
+
+              // 顯示找到目標的提示
+              showMessage(`找到目標 ${targetIndex + 1}`);
+            });
+
+            sceneEl.addEventListener("targetLost", (event) => {
+              const targetIndex = event.detail.targetIndex;
+              console.log("目標遺失:", event.detail.targetIndex);
+
+              // 顯示失去目標的提示
+              showMessage(`失去目標 ${targetIndex + 1}`);
+            });
+
+            // 添加初始化完成事件
+            sceneEl.addEventListener("arReady", () => {
+              console.log("AR 系統準備就緒");
+              showMessage("系統準備就緒，請掃描目標圖片");
+            });
+
+            // 監聽錯誤
+            sceneEl.addEventListener("arError", (event) => {
+              console.error("AR錯誤:", event.detail);
+              showError("AR 系統錯誤: " + (event.detail.message || "未知錯誤"));
+            });
+
+            // 修改性能監控代碼
+            function animate() {
+              stats.begin();
+
+              // 檢查 FPS
+              const fps = stats.getFPS();
+              if (fps < 24) {
+                console.warn("性能警告: FPS低於24");
+              }
+
+              stats.end();
+              requestAnimationFrame(animate);
+            }
+            animate();
+
+            // 啟動 AR
+            await arSystem.start();
+            console.log("AR 系統啟動成功");
+          } catch (err) {
+            console.error("相機或 AR 初始化錯誤:", err);
+            showError(err.message || "相機初始化失敗");
+          }
+        } catch (error) {
+          console.error("系統錯誤:", error);
+          showError(error.message || "系統初始化失敗");
+        }
+      });
+
+      // 添加訊息顯示函數
+      function showMessage(message) {
+        const messageElement = document.createElement("div");
+        messageElement.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 10px 20px;
+          border-radius: 5px;
+          z-index: 1000;
+        `;
+        messageElement.textContent = message;
+        document.body.appendChild(messageElement);
+
+        setTimeout(() => {
+          messageElement.remove();
+        }, 3000);
+      }
+
+      function showError(message) {
+        const errorElement = document.getElementById("error-message");
+        errorElement.textContent = message;
+        errorElement.style.display = "block";
+        setTimeout(() => {
+          errorElement.style.display = "none";
+        }, 5000);
+      }
+    </script>
+  </body>
+</html>
